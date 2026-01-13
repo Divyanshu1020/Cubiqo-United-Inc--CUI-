@@ -10,18 +10,39 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitBtn = document.getElementById('submitBtn');
     const toast = document.getElementById('toast');
     const toastMessage = document.getElementById('toastMessage');
+    const liveClock = document.getElementById('liveClock');
+    const showAllBtn = document.getElementById('showAllBtn');
+    const weekHeader = document.getElementById('weekHeader');
 
     let allTasks = [];
+    let showAllData = false;
+
+    if (!taskForm || !weekStartInput || !tableBody || !itemCountDisplay || !refreshBtn || !submitBtn || !showAllBtn) {
+        console.error('Core UI elements missing');
+        return;
+    }
+
+    // --- Core Logic ---
+
+    function updateClock() {
+        if (!liveClock) return;
+        const now = new Date();
+        liveClock.textContent = now.toLocaleTimeString('en-US', { hour12: false });
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
 
     // --- Date Logic ---
 
-    // Default to current week's Monday
-    const today = new Date();
-    const day = today.getDay();
-    const diff = today.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
-    const monday = new Date(today.setDate(diff));
-    weekStartInput.value = monday.toISOString().split('T')[0];
-    updateWeekDates(monday);
+    function getMonday(d) {
+        d = new Date(d);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(d.setDate(diff));
+        monday.setHours(0, 0, 0, 0);
+        return monday;
+    }
 
     function formatDateForDisplay(date) {
         return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
@@ -35,9 +56,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const formattedStart = formatDateForDisplay(start);
         const formattedEnd = formatDateForDisplay(end);
 
+        // Check if it's the current week
+        const now = new Date();
+        const currentMonday = getMonday(now);
+        const selectedMonday = getMonday(start);
+        const isCurrentWeek = currentMonday.getTime() === selectedMonday.getTime();
+
         weekEndDisplay.textContent = formattedEnd;
-        currentWeekDisplay.textContent = `${formattedStart} – ${formattedEnd}`;
+        currentWeekDisplay.innerHTML = `
+            <span class="live-pulse" style="display: ${isCurrentWeek ? 'inline-block' : 'none'}"></span>
+            ${formattedStart} – ${formattedEnd} 
+            ${isCurrentWeek ? '<span class="current-label">Live</span>' : ''}
+        `;
+
+        // Filter table after updating week
+        if (allTasks.length > 0) {
+            renderTable(allTasks);
+        }
     }
+
+    // Default to current date (Today)
+    const today = new Date();
+    weekStartInput.value = today.toISOString().split('T')[0];
+    updateWeekDates(today);
 
     weekStartInput.addEventListener('change', (e) => {
         if (e.target.value) {
@@ -90,20 +131,39 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderTable(tasks) {
-        tableBody.innerHTML = '';
-        itemCountDisplay.textContent = tasks.length;
+        // Filter tasks by selected week IF not in 'showAll' mode
+        let filteredTasks = tasks;
+        if (!showAllData) {
+            const selectedMonday = getMonday(weekStartInput.value);
+            filteredTasks = tasks.filter(task => {
+                if (!task.weekStart) return true;
+                try {
+                    const taskDate = new Date(task.weekStart);
+                    const taskMonday = getMonday(taskDate);
+                    return taskMonday.getTime() === selectedMonday.getTime();
+                } catch (e) {
+                    return true;
+                }
+            });
+        }
 
-        if (tasks.length === 0) {
+        // Update UI headers
+        if (weekHeader) weekHeader.style.display = showAllData ? 'table-cell' : 'none';
+
+        tableBody.innerHTML = '';
+        itemCountDisplay.textContent = filteredTasks.length;
+
+        if (filteredTasks.length === 0) {
             tableBody.innerHTML = `
                 <tr class="empty-state">
-                    <td colspan="6">
+                    <td colspan="${showAllData ? '7' : '6'}">
                         <div class="empty-message">
                             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                                 <path d="M9 11l3 3L22 4"></path>
                                 <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
                             </svg>
-                            <p>No items yet.</p>
-                            <p class="empty-subtext">Add your first task to get started!</p>
+                            <p>${showAllData ? 'No records found.' : 'No items found for this week.'}</p>
+                            <p class="empty-subtext">${showAllData ? 'The database is currently empty.' : 'Add a task for this week or select a different date.'}</p>
                         </div>
                     </td>
                 </tr>
@@ -111,14 +171,28 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        tasks.forEach(task => {
+        filteredTasks.forEach(task => {
             const tr = document.createElement('tr');
+
+            // Format week start for display
+            let weekDisplay = '---';
+            if (task.weekStart) {
+                try {
+                    const d = new Date(task.weekStart);
+                    // Use 'short' month for better clarity (e.g., Jan 12)
+                    weekDisplay = d.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+                } catch (e) {
+                    weekDisplay = task.weekStart;
+                }
+            }
+
             tr.innerHTML = `
-                <td><strong>${task.name}</strong></td>
-                <td><span class="badge">${task.type}</span></td>
-                <td title="${task.item}">${task.item}</td>
-                <td>${task.hours}h</td>
-                <td style="color: var(--color-text-tertiary)">${task.submitted || 'Just now'}</td>
+                <td><strong>${task.name || 'Unknown'}</strong></td>
+                <td><span class="badge">${task.type || 'Task'}</span></td>
+                <td style="display: ${showAllData ? 'table-cell' : 'none'}"><span class="week-tag">${weekDisplay}</span></td>
+                <td title="${task.item}">${task.item || '---'}</td>
+                <td>${task.hours || 0}h</td>
+                <td style="color: var(--color-text-tertiary)">${task.submitted || 'Existing'}</td>
                 <td>
                     <button class="btn-refresh" style="padding: 4px 8px; font-size: 10px;">Ack</button>
                 </td>
@@ -162,9 +236,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // but we can assume success if no error is thrown
             showToast('Task added successfully!');
             taskForm.reset();
-            // Re-default the date
-            weekStartInput.value = monday.toISOString().split('T')[0];
-            updateWeekDates(monday);
+            // Re-default the date to today
+            const now = new Date();
+            weekStartInput.value = now.toISOString().split('T')[0];
+            updateWeekDates(now);
 
             // Refresh table
             setTimeout(fetchTasks, 1500);
@@ -180,11 +255,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Search Logic ---
 
     searchInput.addEventListener('input', (e) => {
-        const term = e.target.value.toLowerCase();
+        const target = e.target;
+        if (!(target instanceof HTMLInputElement)) return;
+
+        const term = target.value.toLowerCase();
         const filtered = allTasks.filter(task =>
-            task.name.toLowerCase().includes(term) ||
-            task.item.toLowerCase().includes(term) ||
-            task.type.toLowerCase().includes(term)
+            (task.name || '').toLowerCase().includes(term) ||
+            (task.item || '').toLowerCase().includes(term) ||
+            (task.type || '').toLowerCase().includes(term)
         );
         renderTable(filtered);
     });
@@ -203,6 +281,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     refreshBtn.addEventListener('click', fetchTasks);
 
+    showAllBtn.addEventListener('click', () => {
+        showAllData = !showAllData;
+
+        // Update button appearance
+        if (showAllData) {
+            showAllBtn.classList.add('active');
+            showAllBtn.querySelector('span').textContent = 'Show Selected Week';
+        } else {
+            showAllBtn.classList.remove('active');
+            showAllBtn.querySelector('span').textContent = 'View All';
+        }
+
+        renderTable(allTasks);
+    });
+
     // Initial fetch
     fetchTasks();
+
+    // Auto-refresh every 60 seconds
+    setInterval(fetchTasks, 60000);
 });

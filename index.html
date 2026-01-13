@@ -25,7 +25,10 @@
             <h1 class="company-name">Cubiqo United Inc (CUI)</h1>
             <p class="subtitle">Weekly tasks</p>
           </div>
-          <div class="items-counter"><span id="itemCount">0</span> items</div>
+          <div class="header-meta">
+            <div id="liveClock">--:--:--</div>
+            <div class="items-counter"><span id="itemCount">0</span> items</div>
+          </div>
         </div>
       </header>
 
@@ -43,7 +46,7 @@
               <label for="weekStart">Week start (Monday)</label>
               <input type="date" id="weekStart" name="weekStart" required />
               <div class="week-end-display">
-                Week end: <span id="weekEndDisplay">Jan 11, 2026</span>
+                Week end: <span id="weekEndDisplay"></span>
               </div>
             </div>
 
@@ -108,24 +111,44 @@
               <span class="label">Items</span>
               <div class="week-display">
                 <span class="label">Week:</span>
-                <span id="currentWeek">Jan 05, 2026 – Jan 11, 2026</span>
+                <span id="currentWeek">
+                  <span class="live-pulse"></span>
+                  Loading...
+                </span>
               </div>
             </div>
-            <button class="btn-refresh" id="refreshBtn">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"
-                />
-              </svg>
-              Refresh
-            </button>
+            <div class="header-actions">
+              <button class="btn-secondary" id="showAllBtn">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
+                  />
+                </svg>
+                <span>View All</span>
+              </button>
+              <button class="btn-refresh" id="refreshBtn">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"
+                  />
+                </svg>
+                Refresh
+              </button>
+            </div>
           </div>
 
           <div class="search-bar">
@@ -149,6 +172,7 @@
                 <tr>
                   <th>Name</th>
                   <th>Type</th>
+                  <th id="weekHeader" style="display: none">Week</th>
                   <th>Item</th>
                   <th>Hours</th>
                   <th>Submitted</th>
@@ -157,7 +181,7 @@
               </thead>
               <tbody id="tableBody">
                 <tr class="empty-state">
-                  <td colspan="6">
+                  <td colspan="7">
                     <div class="empty-message">
                       <svg
                         width="48"
@@ -207,7 +231,8 @@
 
     <script>
       // Replace this with your actual Google Apps Script Web App URL
-      const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwiMwwecCGuOICrXr6gaCGaVQ0OFTtefA_XvGIkvOUkCXSOeCil4IK1QBkS9ArujYiC/exec";
+      const GAS_WEB_APP_URL =
+        "https://script.google.com/macros/s/AKfycbwiMwwecCGuOICrXr6gaCGaVQ0OFTtefA_XvGIkvOUkCXSOeCil4IK1QBkS9ArujYiC/exec";
     </script>
     <script src="script.js"></script>
   </body>
