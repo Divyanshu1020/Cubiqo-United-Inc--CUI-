@@ -15,14 +15,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const weekHeader = document.getElementById('weekHeader');
 
     let allTasks = [];
-    let showAllData = false;
+    let showAllData = true;
 
     if (!taskForm || !weekStartInput || !tableBody || !itemCountDisplay || !refreshBtn || !submitBtn || !showAllBtn) {
         console.error('Core UI elements missing');
         return;
     }
 
+    const nameInput = document.getElementById('name');
+
     // --- Core Logic ---
+
+    // Load remembered name
+    if (nameInput instanceof HTMLInputElement) {
+        const savedName = localStorage.getItem('cui_user_name');
+        if (savedName) nameInput.value = savedName;
+    }
 
     function updateClock() {
         if (!liveClock) return;
@@ -45,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function formatDateForDisplay(date) {
+        if (!(date instanceof Date)) date = new Date(date);
         return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
     }
 
@@ -114,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     type: row[2] || 'Task',
                     item: row[3] || '',
                     hours: row[4] || 0,
-                    submitted: row[5] || 'Existing'
+                    // submitted: row[5] || 'Existing'
                 }));
             } else {
                 // Only one row - might be data or just headers
@@ -146,6 +155,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
+
+        // Calculate total hours
+        const totalHours = filteredTasks.reduce((sum, t) => sum + parseFloat(t.hours || 0), 0);
+        const totalDisplay = document.getElementById('totalHoursSummary');
+        if (totalDisplay) totalDisplay.textContent = `${totalHours}h`;
 
         // Update UI headers
         if (weekHeader) weekHeader.style.display = showAllData ? 'table-cell' : 'none';
@@ -192,7 +206,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td style="display: ${showAllData ? 'table-cell' : 'none'}"><span class="week-tag">${weekDisplay}</span></td>
                 <td title="${task.item}">${task.item || '---'}</td>
                 <td>${task.hours || 0}h</td>
-                <td style="color: var(--color-text-tertiary)">${task.submitted || 'Existing'}</td>
                 <td>
                     <button class="btn-refresh" style="padding: 4px 8px; font-size: 10px;">Ack</button>
                 </td>
@@ -200,6 +213,8 @@ document.addEventListener('DOMContentLoaded', () => {
             tableBody.appendChild(tr);
         });
     }
+
+    
 
     // --- Form Submission ---
 
@@ -211,13 +226,22 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const typeEl = document.getElementById('type');
+        const itemEl = document.getElementById('item');
+        const hoursEl = document.getElementById('hours');
+
         const formData = {
             weekStart: weekStartInput.value,
-            name: document.getElementById('name').value,
-            type: document.getElementById('type').value,
-            item: document.getElementById('item').value,
-            hours: document.getElementById('hours').value
+            name: nameInput instanceof HTMLInputElement ? nameInput.value : '',
+            type: (typeEl instanceof HTMLSelectElement) ? typeEl.value : '',
+            item: (itemEl instanceof HTMLTextAreaElement) ? itemEl.value : '',
+            hours: (hoursEl instanceof HTMLInputElement) ? hoursEl.value : 0
         };
+
+        // Remember name
+        if (formData.name) {
+            localStorage.setItem('cui_user_name', formData.name);
+        }
 
         submitBtn.classList.add('loading');
 
@@ -260,9 +284,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const term = target.value.toLowerCase();
         const filtered = allTasks.filter(task =>
-            (task.name || '').toLowerCase().includes(term) ||
-            (task.item || '').toLowerCase().includes(term) ||
-            (task.type || '').toLowerCase().includes(term)
+            (task.name || '').toLowerCase().includes(term)
+            // (task.item || '').toLowerCase().includes(term) ||
+            // (task.type || '').toLowerCase().includes(term)
         );
         renderTable(filtered);
     });
