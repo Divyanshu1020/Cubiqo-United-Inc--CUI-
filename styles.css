@@ -25,12 +25,12 @@
 
   /* Shadows - Layered depth */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-    0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
   /* Spacing */
   --spacing-xs: 0.5rem;
@@ -47,8 +47,8 @@
   --radius-xl: 1rem;
 
   /* Typography */
-  --font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+  --font-family:
+    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
@@ -622,14 +622,53 @@ body {
 }
 
 .week-tag {
-  display: inline-block;
-  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--color-border);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
   border-radius: var(--radius-sm);
   font-size: var(--font-size-xs);
   font-weight: 600;
-  background: var(--color-background);
+  gap: 4px;
+}
+
+.status-done {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.btn-ack {
+  padding: 4px 10px;
+  font-size: 11px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all var(--transition-fast);
+}
+
+.btn-ack:hover {
+  background: var(--color-primary);
+  color: white;
+}
+
+.btn-ack:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.row-acknowledged {
+  background-color: var(--color-success-bg) !important;
+  opacity: 0.85;
+}
+
+.row-acknowledged td {
   color: var(--color-text-secondary);
-  border: 1px solid var(--color-border);
 }
 
 /* ===================================

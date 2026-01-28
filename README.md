@@ -12,7 +12,7 @@ function doPost(e) {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     const data = JSON.parse(e.postData.contents);
 
-    // Check if sheet is empty to add headers
+    // Create headers once
     if (sheet.getLastRow() === 0) {
       sheet.appendRow([
         "Week Start",
@@ -20,35 +20,64 @@ function doPost(e) {
         "Type",
         "Item",
         "Hours",
+        "Acknowledged",
         "Timestamp",
       ]);
     }
 
-    // Appends data to the next empty row
+    // -----------------------------
+    // ACKNOWLEDGE TASK
+    // -----------------------------
+    if (data.action === "acknowledge") {
+      const rowNumber = data.rowNumber; // This is the actual row number in the sheet
+
+      // Set Acknowledged column (column 6) to true
+      sheet.getRange(rowNumber, 6).setValue(true);
+      return ContentService.createTextOutput("Acknowledged");
+    }
+
+    // -----------------------------
+    // CREATE NEW TASK
+    // -----------------------------
     sheet.appendRow([
       data.weekStart,
       data.name,
       data.type,
       data.item,
       data.hours,
+      false, // Acknowledged = false by default
       new Date().toLocaleString(),
     ]);
 
-    return ContentService.createTextOutput("Success").setMimeType(
-      ContentService.MimeType.TEXT
-    );
+    return ContentService.createTextOutput("Inserted");
   } catch (error) {
-    return ContentService.createTextOutput(
-      "Error: " + error.toString()
-    ).setMimeType(ContentService.MimeType.TEXT);
+    return ContentService.createTextOutput("Error: " + error.toString());
   }
 }
 
 function doGet() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  const data = sheet.getDataRange().getValues();
+  const rows = sheet.getDataRange().getValues();
+
+  // Skip header row and map data with row numbers
+  const data = rows.slice(1).map((row, index) => {
+    return {
+      rowNumber: index + 2, // Row number in sheet (1-indexed, +1 for header)
+      weekStart: row[0],
+      name: row[1],
+      type: row[2],
+      item: row[3],
+      hours: row[4],
+      acknowledged: row[5],
+      timestamp: row[6],
+    };
+  });
+
+  // Reverse to show newest first (descending order)
+  data.reverse();
+
   return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(
-    ContentService.MimeType.JSON
+    ContentService.MimeType.JSON,
   );
 }
 ```
@@ -84,4 +113,7 @@ The code will automatically create these columns if the sheet is empty:
 - Type
 - Item
 - Hours
+- Acknowledged (for acknowledgment status)
 - Timestamp
+
+**Note:** Row numbers are used as IDs internally (no separate ID column needed).
